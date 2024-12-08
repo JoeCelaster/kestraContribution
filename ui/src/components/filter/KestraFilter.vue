@@ -78,7 +78,9 @@
         </el-select>
 
         <el-button-group class="d-inline-flex">
-            <el-button :icon="Magnify" @click="triggerSearch" />
+            <KestraIcon :tooltip="$t('search')" placement="bottom">
+                <el-button :icon="Magnify" @click="triggerSearch" />
+            </KestraIcon>
             <Save :disabled="!current.length" :prefix :current />
             <Refresh v-if="refresh.shown" @refresh="refresh.callback" />
             <Settings v-if="settings.shown" :settings />
@@ -112,6 +114,7 @@
     import Save from "./components/Save.vue";
     import Settings from "./components/Settings.vue";
     import Dashboards from "./components/Dashboards.vue";
+    import KestraIcon from "../Kicon.vue";
 
     import Magnify from "vue-material-design-icons/Magnify.vue";
 
@@ -453,22 +456,35 @@
         router.push({query: encodeParams(current.value)});
     };
 
-    // Include paramters from URL directly to filter
+    // Include parameters from URL directly to filter
     current.value = decodeParams(route.query, props.include);
 
-    if (route.name === "flows/update" && route.params.namespace) {
+    const addNamespaceFilter = (namespace) => {
+        if (!namespace) return;
         current.value.push({
             label: "namespace",
-            value: [route.params.namespace],
+            value: [namespace],
             comparator: COMPARATORS.STARTS_WITH,
             persistent: true,
         });
-    }
+    };
+
+    const {name, params} = route;
+
+    if (name === "flows/update") addNamespaceFilter(params?.namespace);
+    else if (name === "namespaces/update") addNamespaceFilter(params.id);
 </script>
 
 <style lang="scss">
-.filters {
+@mixin width-available {
+    width: -moz-available;
     width: -webkit-fill-available;
+    // https://caniuse.com/?search=fill-available
+    width: fill-available;
+}
+
+.filters {
+    @include width-available;
 
     & .el-select {
         max-width: calc(100% - 237px);
@@ -512,11 +528,12 @@
     }
 
     & .el-button-group {
-        > .el-button {
+        .el-button {
             border-radius: 0;
         }
 
-        > .el-button:last-child {
+        span.kicon:last-child .el-button,
+        > button.el-button:last-child {
             border-top-right-radius: var(--bs-border-radius);
             border-bottom-right-radius: var(--bs-border-radius);
         }
